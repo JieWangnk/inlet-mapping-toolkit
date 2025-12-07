@@ -14,11 +14,11 @@ Transform your 1D inlet flow rate data (CSV) into realistic 3D velocity profiles
 # Generate wall-distance profile from flow rate CSV
 python map_inlet.py inlet.stl flowrate.csv --profile wall_distance --output boundaryData/
 
-# Generate Womersley profile (pulsatile flow)
-python map_inlet.py inlet.stl flowrate.csv --profile womersley --output boundaryData/
-
 # Constant flow with parabolic profile
 python map_inlet.py inlet.stl --flowrate 5.0 --profile parabolic --output boundaryData/
+
+# Wall-distance with custom exponent
+python map_inlet.py inlet.stl flowrate.csv --profile wall_distance --exponent 1.5 --output boundaryData/
 ```
 
 ## Features
@@ -27,8 +27,6 @@ python map_inlet.py inlet.stl --flowrate 5.0 --profile parabolic --output bounda
   - `plug` - Uniform velocity (simplest)
   - `parabolic` - Classic Poiseuille profile
   - `wall_distance` - Distance-to-wall based (irregular geometries)
-  - `womersley` - Pulsatile flow with frequency-dependent effects
-  - `blunted` - Flat core with parabolic near-wall
 
 - **Flexible Input**:
   - Time-varying flow rate from CSV
@@ -47,9 +45,15 @@ python map_inlet.py inlet.stl --flowrate 5.0 --profile parabolic --output bounda
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/inlet-mapping-toolkit.git
+git clone https://github.com/JieWangnk/inlet-mapping-toolkit.git
 cd inlet-mapping-toolkit
-pip install -r requirements.txt
+
+# Create virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+python3 -m pip install -r requirements.txt
 ```
 
 ### Dependencies
@@ -69,16 +73,13 @@ python map_inlet.py inlet.stl flowrate.csv --profile wall_distance
 # Parabolic profile with constant flow
 python map_inlet.py inlet.stl --flowrate 5.0 --profile parabolic
 
-# Womersley profile for pulsatile flow
-python map_inlet.py inlet.stl flowrate.csv --profile womersley --viscosity 3.5e-6
+# Custom exponent (n=2 is parabolic-like, n=1/7 is turbulent)
+python map_inlet.py inlet.stl flowrate.csv --profile wall_distance --exponent 2.0
 ```
 
 ### Advanced Options
 
 ```bash
-# Custom exponent for wall-distance profile
-python map_inlet.py inlet.stl flowrate.csv --profile wall_distance --exponent 2.0
-
 # Specify output directory
 python map_inlet.py inlet.stl flowrate.csv --output /path/to/case/constant/boundaryData/inlet
 
@@ -130,20 +131,6 @@ U(d) = U_0 * (d/d_max)^n
 - `n=2`: Quadratic (parabolic-like)
 - `n=1/7`: Turbulent power law
 
-### Womersley Profile
-Analytical solution for pulsatile flow in a circular tube. Captures frequency-dependent effects.
-```
-U(r,t) = Real{ sum_k [ U_k * (1 - J0(α_k*r/R)/J0(α_k)) * exp(i*k*ω*t) ] }
-```
-Where α_k = R * sqrt(k*ω/ν) is the Womersley number.
-
-### Blunted Profile
-Flat core with parabolic decay near walls. Models transitional/turbulent inlet.
-```
-U(d) = U_max           for d > core_fraction * d_max
-U(d) = parabolic       for d < core_fraction * d_max
-```
-
 ## Output Structure
 
 ```
@@ -174,15 +161,7 @@ Even constant profiles use `timeVaryingMappedFixedValue` with a single timestep 
 
 ## Examples
 
-### Example 1: Adult Aorta with Pulsatile Flow
-```bash
-python map_inlet.py aorta_inlet.stl cardiac_cycle.csv \
-    --profile womersley \
-    --viscosity 3.77e-6 \
-    --output case/constant/boundaryData/inlet
-```
-
-### Example 2: Pediatric Case with Irregular Inlet
+### Example 1: Patient-Specific Irregular Inlet
 ```bash
 python map_inlet.py valve_inlet.stl flowrate.csv \
     --profile wall_distance \
@@ -190,11 +169,19 @@ python map_inlet.py valve_inlet.stl flowrate.csv \
     --output case/constant/boundaryData/inlet
 ```
 
-### Example 3: Steady-State Validation
+### Example 2: Steady-State Validation
 ```bash
 python map_inlet.py inlet.stl \
     --flowrate 6.0 \
     --profile parabolic \
+    --output case/constant/boundaryData/inlet
+```
+
+### Example 3: Time-Varying Wall-Distance
+```bash
+python map_inlet.py aorta_inlet.stl cardiac_cycle.csv \
+    --profile wall_distance \
+    --exponent 2.0 \
     --output case/constant/boundaryData/inlet
 ```
 
@@ -223,13 +210,9 @@ print(f"Mean velocity: {stats['mean_velocity']:.2f} m/s")
 ## Validation
 
 The toolkit has been validated against:
-- Analytical Womersley solutions
+- Analytical parabolic solutions
 - Published cardiovascular CFD benchmarks
 - OpenFOAM built-in profiles
-
-## Contributing
-
-Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Citation
 
