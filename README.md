@@ -113,6 +113,31 @@ inlet
 }
 ```
 
+## Limitations
+
+### Centerline Gradient
+
+The wall-distance power law profile U(d) = U₀ × (d/d_max)^n has a known limitation: it does not produce zero velocity gradient at the centerline for circular inlets. This is a recognised deficiency of power law formulations ([Kahine et al., 2021](https://www.mdpi.com/2311-5521/6/10/369)).
+
+For this toolkit's intended use (patient-specific cardiovascular geometries), the priority is correct near-wall behaviour for wall shear stress calculations. For ideal circular pipes, classical radial formulations may be more appropriate.
+
+### Turbulent Inlet Conditions
+
+This toolkit generates **mean velocity profiles only**. For proper turbulent simulations, you also need turbulent fluctuations. Consider:
+
+- **Synthetic turbulence methods** - `turbulentDFSEMInlet` or `turbulentDigitalFilterInlet` in OpenFOAM
+- **Turbulence quantities** - estimate k and ε from turbulence intensity:
+  ```cpp
+  inlet
+  {
+      type            turbulentIntensityKineticEnergyInlet;
+      intensity       0.05;  // 5% turbulence intensity
+      value           uniform 0.1;
+  }
+  ```
+
+For cardiovascular flows, turbulence intensity of 1-5% is typical.
+
 ## Options
 
 | Option | Description |
