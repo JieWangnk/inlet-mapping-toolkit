@@ -104,7 +104,47 @@ Place in `constant/boundaryData/inlet/` for your OpenFOAM case.
 
 ## OpenFOAM Setup
 
-Add to `0/U`:
+### Recommended Workflow (with `--points-file`)
+
+For production use, extract the actual mesh face centres rather than using the STL triangle centres. This ensures the sampling points match the OpenFOAM mesh exactly and span the full cross-section.
+
+**Step 1:** Add a `system/sampleDict` to your OpenFOAM case:
+
+```cpp
+type            surfaces;
+libs            ("libsampling.so");
+interpolationScheme cellPoint;
+surfaceFormat   foam;
+fields          ();    // no fields needed, just geometry
+
+surfaces
+(
+    inlet
+    {
+        type            patch;
+        patches         (inlet);
+        interpolate     false;
+    }
+);
+```
+
+**Step 2:** Extract the face centres:
+
+```bash
+postProcess -func sampleDict -latestTime
+# Output: postProcessing/sampleDict/0/inlet/faceCentres
+```
+
+**Step 3:** Run the toolkit with `--points-file`:
+
+```bash
+python map_inlet.py constant/triSurface/inlet.stl flowrate.csv \
+    --profile parabolic \
+    --points-file postProcessing/sampleDict/0/inlet/faceCentres \
+    --output constant/boundaryData/inlet
+```
+
+**Step 4:** Set up the inlet boundary condition in `0/U`:
 
 ```cpp
 inlet
@@ -114,6 +154,10 @@ inlet
     setAverage      false;
 }
 ```
+
+### Why use `--points-file`?
+
+Without `--points-file`, the toolkit uses the STL triangle centroids as sampling points. If the STL has coarse or non-uniform triangulation, these centroids may cluster at the same radial distance and fail to resolve the velocity profile shape. Using mesh face centres from `postProcess` guarantees proper spatial distribution across the inlet.
 
 ## Limitations
 

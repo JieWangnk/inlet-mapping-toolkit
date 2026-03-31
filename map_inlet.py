@@ -132,6 +132,13 @@ Profile Types:
         default=None,
         help="Use existing mesh points file instead of STL face centres"
     )
+    parser.add_argument(
+        "--resample",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Resample STL surface with N well-distributed points (default: use STL face centres)"
+    )
 
     # Output options
     parser.add_argument(
@@ -208,6 +215,7 @@ Profile Types:
             scale_factor=args.scale,
             flip_normal=args.flip_normal,
             points_file=args.points_file,
+            resample=args.resample,
             **profile_kwargs
         )
     except Exception as e:

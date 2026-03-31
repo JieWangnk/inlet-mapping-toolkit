@@ -145,6 +145,26 @@ class InletGeometry:
 
         return centres
 
+    def resample_surface(self, n_points: int = 200) -> np.ndarray:
+        """
+        Generate well-distributed sample points across the inlet surface.
+
+        Uses trimesh to sample points uniformly over the surface area,
+        ensuring good radial distribution even for coarse STL meshes.
+
+        Parameters
+        ----------
+        n_points : int
+            Number of sample points to generate.
+
+        Returns
+        -------
+        np.ndarray
+            Resampled point coordinates (n_points, 3).
+        """
+        points, _ = self.mesh.sample(n_points, return_index=True)
+        return points
+
     def get_face_areas(self) -> np.ndarray:
         """
         Get individual face areas.

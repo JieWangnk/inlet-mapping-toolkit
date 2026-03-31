@@ -58,6 +58,7 @@ class InletMapper:
         scale_factor: float = 1.0,
         flip_normal: bool = False,
         points_file: Optional[str] = None,
+        resample: Optional[int] = None,
         **kwargs
     ):
         self.stl_path = stl_path
@@ -67,6 +68,7 @@ class InletMapper:
         self.scale_factor = scale_factor
         self.flip_normal = flip_normal
         self.points_file = points_file
+        self.resample = resample
         self.profile_kwargs = kwargs
 
         # Validate inputs
@@ -97,6 +99,10 @@ class InletMapper:
             reader = PointsFileReader(points_file)
             self.mesh_points = reader.get_points()
             print(f"  Loaded {len(self.mesh_points)} face centres")
+        elif resample:
+            print(f"\nResampling STL surface with {resample} points")
+            self.mesh_points = self.geometry.resample_surface(resample)
+            print(f"  Generated {len(self.mesh_points)} sample points")
 
         # Create profile generator
         self.profile = get_profile(
