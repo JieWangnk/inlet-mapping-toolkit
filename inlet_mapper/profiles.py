@@ -82,8 +82,8 @@ class BaseProfile(ABC):
         # Q = sum(f_i * U_0 * dA_i) => U_0 = Q / sum(f_i * dA_i)
         integrated = np.sum(shape_factors * face_areas)
 
-        if integrated <= 0:
-            # Fallback to uniform if shape factors are zero
+        if integrated <= 0 or np.isnan(integrated):
+            # Fallback to uniform if shape factors are zero or NaN
             U_0 = abs(flow_rate) / np.sum(face_areas)
             shape_factors = np.ones(len(points))
         else:

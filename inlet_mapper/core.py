@@ -106,6 +106,20 @@ class InletMapper:
         )
         print(f"\nProfile type: {profile}")
 
+        # When using external points file with a centroid-based profile,
+        # verify coordinate consistency and update if needed
+        if self.mesh_points is not None and hasattr(self.profile, 'centroid'):
+            mesh_centroid = np.mean(self.mesh_points, axis=0)
+            stl_centroid = self.profile.centroid
+            offset = np.linalg.norm(mesh_centroid - stl_centroid)
+            if offset > self.profile.radius * 0.5:
+                print(f"\n  Warning: mesh points centroid is {offset:.4e} m from STL centroid")
+                print(f"  (STL centroid: {stl_centroid}, mesh centroid: {mesh_centroid})")
+                print(f"  Recomputing centroid and radius from mesh points.")
+                self.profile.centroid = mesh_centroid
+                radial_dists = np.linalg.norm(self.mesh_points - mesh_centroid, axis=1)
+                self.profile.radius = np.max(radial_dists)
+
     def generate(
         self,
         output_dir: str,
@@ -257,6 +271,16 @@ class InletMapper:
                 points, **self.profile_kwargs
             )
             integrated = np.sum(shape_factors * face_areas)
+
+            if integrated <= 0 or np.isnan(integrated):
+                # Fallback to uniform profile if shape factors are all zero/NaN
+                print(f"  Warning: {self.profile_type} shape factors all zero — "
+                      f"falling back to uniform profile.")
+                print(f"  This usually means the --points-file coordinates don't match "
+                      f"the STL coordinate system (e.g. mm vs m).")
+                shape_factors = np.ones(len(points))
+                integrated = np.sum(shape_factors * face_areas)
+
             velocity_directions = np.outer(shape_factors, self.geometry.normal)
 
         # Generate velocity for each timestep
