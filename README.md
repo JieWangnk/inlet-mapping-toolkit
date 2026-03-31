@@ -155,9 +155,25 @@ inlet
 }
 ```
 
-### Why use `--points-file`?
+### Note: STL without centre vertex
 
-Without `--points-file`, the toolkit uses the STL triangle centroids as sampling points. If the STL has coarse or non-uniform triangulation, these centroids may cluster at the same radial distance and fail to resolve the velocity profile shape. Using mesh face centres from `postProcess` guarantees proper spatial distribution across the inlet.
+Many inlet STL files are triangulated using only boundary (rim) vertices, with no vertex at the centre. In this case, the STL face centres cluster in a crescent pattern and miss the centre region entirely, producing a distorted profile:
+
+| STL face centres (48 pts) | `--resample 500` |
+|:---:|:---:|
+| ![STL face centres](docs/points_stl_face_centres.png) | ![Resampled](docs/points_resampled.png) |
+| ![Profile distorted](docs/profile_stl_face_centres.png) | ![Profile correct](docs/profile_resampled.png) |
+
+**Fix:** Use `--resample` to generate well-distributed points across the surface, or use `--points-file` with actual mesh face centres:
+
+```bash
+# Quick fix: resample the STL surface
+python map_inlet.py inlet.stl flowrate.csv --profile parabolic --resample 500
+
+# Best: use mesh face centres (see workflow above)
+python map_inlet.py inlet.stl flowrate.csv --profile parabolic \
+    --points-file postProcessing/sampleDict/0/inlet/faceCentres
+```
 
 ## Limitations
 
