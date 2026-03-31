@@ -40,32 +40,34 @@ python map_inlet.py inlet.stl flowrate.csv --profile wall_distance \
 | `plug` | Uniform velocity | Testing |
 | `parabolic` | Classic Poiseuille (1 - r²/R²) | Circular inlets |
 | `wall_distance` | Based on distance to wall | Irregular geometries |
+| `womersley` | Pulsatile with frequency effects | Pulsatile circular inlets |
+| `blunted` | Flat core + parabolic wall | Transitional flow |
 
 ## Examples
 
-The `examples/` folder contains sample files. Example outputs are included:
+The `examples/` folder contains sample input files (`inlet.stl`, `flowrate.csv`, `points`):
 
 ```bash
-# Constant flow - using STL face centres (for testing/visualization)
-python map_inlet.py ./examples/inlet.stl --flowrate 4.7 --profile wall_distance --output boundaryData_stl/
+# Constant flow - using STL face centres
+python map_inlet.py examples/inlet.stl --flowrate 4.7 --profile wall_distance
 
 # Constant flow - using mesh face centres (recommended for production)
-python map_inlet.py ./examples/inlet.stl --flowrate 4.7 --profile wall_distance --points-file ./examples/points --output boundaryData_mesh/
+python map_inlet.py examples/inlet.stl --flowrate 4.7 --profile wall_distance \
+    --points-file examples/points
 
 # Time-varying flow from CSV
-python map_inlet.py ./examples/inlet.stl ./examples/flowrate.csv --profile wall_distance --points-file ./examples/points --output boundaryData_timevarying_mesh/
-```
+python map_inlet.py examples/inlet.stl examples/flowrate.csv --profile wall_distance \
+    --points-file examples/points
 
-- `boundaryData_stl/` - constant flow, mapped to STL triangle centres
-- `boundaryData_mesh/` - constant flow, mapped to mesh face centres
-- `boundaryData_timevarying_mesh/` - time-varying flow from CSV, mapped to mesh face centres
-
-```bash
 # Wall-distance with custom exponent (1/7 power law for turbulent)
-python map_inlet.py inlet.stl flowrate.csv --profile wall_distance --exponent 0.143
+python map_inlet.py examples/inlet.stl examples/flowrate.csv --profile wall_distance \
+    --exponent 0.143
+
+# Womersley pulsatile profile
+python map_inlet.py examples/inlet.stl examples/flowrate.csv --profile womersley
 
 # Preview statistics without generating files
-python map_inlet.py inlet.stl flowrate.csv --profile wall_distance --preview
+python map_inlet.py examples/inlet.stl examples/flowrate.csv --profile wall_distance --preview
 ```
 
 ## Input Formats
@@ -142,7 +144,7 @@ For cardiovascular flows, turbulence intensity of 1-5% is typical.
 
 | Option | Description |
 |--------|-------------|
-| `--profile` | `plug`, `parabolic`, `wall_distance` |
+| `--profile` | `plug`, `parabolic`, `wall_distance`, `womersley`, `blunted` |
 | `--flowrate` | Constant flow rate in L/min |
 | `--output` | Output directory (default: `boundaryData/inlet`) |
 | `--exponent` | Wall-distance exponent (default: 2.0) |
@@ -159,6 +161,13 @@ from inlet_mapper import InletMapper
 
 mapper = InletMapper("inlet.stl", "flowrate.csv", profile="wall_distance")
 mapper.generate("boundaryData/inlet")
+```
+
+## Testing
+
+```bash
+pip install pytest
+pytest tests/ -v
 ```
 
 ## Citation
