@@ -106,19 +106,37 @@ class InletMapper:
         )
         print(f"\nProfile type: {profile}")
 
-        # When using external points file with a centroid-based profile,
-        # verify coordinate consistency and update if needed
-        if self.mesh_points is not None and hasattr(self.profile, 'centroid'):
+        # When using external points file, verify coordinate consistency
+        # between STL geometry and mesh points, and update if needed
+        if self.mesh_points is not None:
             mesh_centroid = np.mean(self.mesh_points, axis=0)
-            stl_centroid = self.profile.centroid
+            stl_centroid = self.geometry.centroid
             offset = np.linalg.norm(mesh_centroid - stl_centroid)
-            if offset > self.profile.radius * 0.5:
+            mismatch = offset > self.geometry.equivalent_radius * 0.5
+
+            if mismatch:
                 print(f"\n  Warning: mesh points centroid is {offset:.4e} m from STL centroid")
                 print(f"  (STL centroid: {stl_centroid}, mesh centroid: {mesh_centroid})")
-                print(f"  Recomputing centroid and radius from mesh points.")
+                print(f"  Recomputing profile geometry from mesh points.")
+
+            # Fix centroid-based profiles (parabolic, womersley)
+            if mismatch and hasattr(self.profile, 'centroid'):
                 self.profile.centroid = mesh_centroid
                 radial_dists = np.linalg.norm(self.mesh_points - mesh_centroid, axis=1)
                 self.profile.radius = np.max(radial_dists)
+
+            # Fix boundary-based profiles (wall_distance, blunted)
+            if mismatch and hasattr(self.profile, 'boundary_vertices'):
+                radial_dists = np.linalg.norm(self.mesh_points - mesh_centroid, axis=1)
+                r_max = np.max(radial_dists)
+                # Use outermost mesh points as boundary approximation
+                threshold = 0.75 * r_max
+                peripheral = self.mesh_points[radial_dists > threshold]
+                if len(peripheral) >= 3:
+                    self.profile.boundary_vertices = peripheral
+                else:
+                    self.profile.boundary_vertices = self.mesh_points
+                self.profile._tree = None  # Reset KDTree cache
 
     def generate(
         self,
